@@ -34,6 +34,7 @@ Middle <- arrow::read_csv_arrow("data/LAPD_data.csv")
 #   resume = TRUE
 # )
 
+
 # データの可視化 -----------------------------------------------------------------
 
 data_dis <- tibble(name　　　= c("軽量データ１", "軽量データ２", "軽量データ３",
@@ -45,7 +46,7 @@ data_dis <- tibble(name　　　= c("軽量データ１", "軽量データ２", 
                                                "data/seattle_library_data.csv")),
                    file_byte = as.numeric(file_size))
 
-# 表の出力
+## 表の出力
 gt_dis <-
   data_dis %>%
   dplyr::mutate(file_byte = file_byte/1024^2) %>% 
@@ -68,7 +69,7 @@ gt_dis <-
   print() 
 gtsave(gt_dis, "output/file_info.png")
 
-# 図の出力
+## 図の出力
 windowsFonts("Meiryo" = windowsFont("Meiryo"))
 
 p_1 <- ggplot(slice(data_dis, -1, -2), aes(x = fct_reorder(name, file_size), y = file_size)) +
@@ -177,6 +178,7 @@ bench_mini_2 <- bench::mark(
   check = FALSE
   )
 
+## マイクロベンチマークのプロット
 bench_mini_1 %<>% mutate(package = str_extract(expr, "^[a-z]+"))
 p_mini <- 
   autoplot(bench_mini_1) + 
@@ -192,7 +194,37 @@ p_mini <-
   )
 p_mini
 
-ggsave("output/bench_mini.png", plot = p_mini, dpi = 300)
+ggsave("output/bench_mini.png", plot = p_mini,
+       dpi = 300, width = 700*3, height = 500*3, units = "px")
+# *3 はPreview時のdpiとのズレを直すため
+
+## ベンチのプロット
+gt_bench_1 <-
+  bench_mini_2 %>% 
+  dplyr::mutate(proc = str_extract(as.character(expression), "^[a-z]+"),
+                data = str_extract(as.character(expression), "軽量データ\\d+")) %>% 
+  dplyr::select(proc, data, 2, 3, 4, 5) %>%
+  group_by(data) %>% 
+  gt() %>% 
+  opt_table_font(font = "Meiryo") %>% 
+  cols_label(proc      = "",
+             min 　　　= "実行時間（最小値）",
+             median    = "（中央値）",
+             `itr/sec` = "1秒あたり実行回数",
+             mem_alloc = "使用メモリ") %>% 
+  tab_header(title = "軽量データのベンチマーク") %>% 
+  cols_align(align = "right",
+             columns = everything()) %>%
+  fmt_number(columns  = `itr/sec`,
+             decimals = 2,
+             use_seps = FALSE) %>% 
+  cols_width(proc         ~ px(170),
+             min          ~ px(160),
+             `itr/sec`    ~ px(150),
+             everything() ~ px(110)) %T>% 
+  print()
+
+gtsave(gt_bench_1, "output/bench_info_mini.png")
 
 
 ## ミドルデータ ----
@@ -206,6 +238,7 @@ bench_middle_2 <- bench::mark(
   check = FALSE
 )
 
+## マイクロベンチマークのプロット
 bench_middle_1 %<>% mutate(package = str_extract(expr, "^[a-z]+"))
 p_middle <- 
   autoplot(bench_middle_1) + 
@@ -214,34 +247,41 @@ p_middle <-
   see::scale_fill_okabeito() +   scale_y_log10(name="実行時間（秒）（反復100回）")+
   theme_minimal() +
   theme(
+    axis.text = element_text(size = 12),
     panel.grid.major.y = element_blank(),
     panel.grid.minor.y = element_blank()
     )
 p_middle
 
+ggsave("output/bench_middle.png", plot =p_middle,
+       dpi = 300, width = 700*3, height = 500*3, units = "px")
+
+## ベンチのプロット
+gt_bench_2 <-
+  bench_middle_2 %>% 
+  dplyr::mutate(proc = str_extract(as.character(expression), "^[a-z]+")) %>% 
+  dplyr::select(proc, 2, 3, 4, 5) %>%
+  gt() %>% 
+  opt_table_font(font = "Meiryo") %>% 
+  cols_label(proc      = "",
+             min 　　　= "実行時間（最小値）",
+             median    = "（中央値）",
+             `itr/sec` = "1秒あたり実行回数",
+             mem_alloc = "使用メモリ") %>% 
+  tab_header(title = "中規模データのベンチマーク") %>% 
+  cols_align(align = "right",
+             columns = everything()) %>%
+  fmt_number(columns  = `itr/sec`,
+             decimals = 2,
+             use_seps = FALSE) %>% 
+  cols_width(proc         ~ px(170),
+             min          ~ px(160),
+             `itr/sec`    ~ px(150),
+             everything() ~ px(110)) %T>% 
+  print() 
+
+gtsave(gt_bench_2, "output/bench_info_middle.png")
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-# 参考文献
-# "https://www.r-bloggers.com/2024/04/super-saiyan-data-skills-mastering-big-data-with-r/"
-# "https://catalog.data.gov/dataset/crime-data-from-2020-to-present#sec-dates"
-# "https://note.com/sankac_1211/n/n9e26dd5aea83"
-# "https://r4ds.hadley.nz/arrow#getting-the-data"
-# "https://data.seattle.gov/d/tmmm-ytt6"
-# "https://zenn.dev/nicetak/articles/r-tips-graph-2022"
-# "https://www.jaysong.net/tutorial/R/gt.html#%E3%81%AF%E3%81%98%E3%82%81%E3%81%AB"
-
-
-
-
+## 作業環境
+sessionInfo()
