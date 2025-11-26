@@ -4,3 +4,4 @@ arrow_benchmark/.Rproj.user/
 *.png
 *.txt
 .Rproj.user
+*.Rhistory
